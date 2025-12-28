@@ -10,8 +10,7 @@ local objects = {}
 objects.basic = {}
 objects.basic.__index = objects.basic
 
----@param rect Rectangle
----@param color Color
+---@param rect Rectangle @param color Color
 function objects.basic.new(rect, color)
     local obj = setmetatable({}, objects.basic)
 
@@ -45,9 +44,19 @@ function objects.player.new(rect, color, velocity)
     return obj
 end
 --Display playerObj
-function objects.player:Display()
-    love.graphics.setColor(self.Color:GetValue())
-    love.graphics.rectangle("fill", self.Rect.x, self.Rect.y, self.Rect.width, self.Rect.height)
+function objects.player:Display(player_img)
+    -- Code snippet below is the hitbox
+    --love.graphics.setColor(self.Color:GetValue())
+    --love.graphics.rectangle("fill", self.Rect.x, self.Rect.y, self.Rect.width, self.Rect.height)
+
+    local plRect = self.Rect
+    local plImgScale = 0.74
+    love.graphics.setColor(1, 1, 1)
+    if gamePro.onRight then
+        love.graphics.draw(player_img, plRect.x-1, plRect.y-5, 0, plImgScale, plImgScale)
+    else
+        love.graphics.draw(player_img, plRect.x+30.08, plRect.y-5, 0, -plImgScale, plImgScale)
+    end
 end
 --Update velocity
 ---@param deltatime number
@@ -63,8 +72,8 @@ end
 
 --Move player
 local hasMovement = true
----@param x number
----@param y number
+---@param x number|nil
+---@param y number|nil
 function objects.player:Move(x, y)
     if hasMovement then
         self.Velocity.x = x or self.Velocity.x
@@ -84,36 +93,44 @@ function objects.player:SeparateCollisionBasic(basic)
 
     if not self.Rect:IsCollide(basic.Rect) and gamePro.hasStarted then return end
     if col_distY > 0 then
+        local distY = (self.Rect.y+self.Rect.height) - basic.Rect.y
         self.Velocity.y = 0
+        self.Rect.y = self.Rect.y - distY
     end
 end
 
 ---@param basic basicObj
-function objects.player:SeparateCollisionTest(basic)
-    local basic_center = mc.vec2.new(basic.Rect.x + basic.Rect.width / 2, basic.Rect.x + basic.Rect.height / 2)
+function objects.player:SeparateFromBasic(basic)
+    local basic_center = mc.vec2.new(basic.Rect.x + (basic.Rect.width / 2), basic.Rect.y + (basic.Rect.height / 2))
+    local self_center = mc.vec2.new(self.Rect.x + (self.Rect.width/2), self.Rect.y + (self.Rect.height/2))
     --X calc
     --Y calc
 
     if not self.Rect:IsCollide(basic.Rect) and gamePro.hasStarted then return end
-    --self.Rect.y = self.Rect.y - 3
-    local yStep = 7
-    local isFocusOnY = ((self.Rect.y - yStep) + self.Rect.height <= basic.Rect.y or
-                       (self.Rect.y - yStep) >= basic.Rect.y + basic.Rect.height)
-    if self.Rect.x < basic_center.x and not isFocusOnY then
-        Logtest = "What Left"
-        self.Velocity.x = 0
-        local distX = (self.Rect.x+self.Rect.width) - basic.Rect.x
-        self.Rect.x = self.Rect.x - math.abs(distX+1)
-    elseif self.Rect.x > basic_center.x and not isFocusOnY then
-        Logtest = "What Right"
-        self.Velocity.x = 0
-        local distX = self.Rect.x - (basic.Rect.x + basic.Rect.width)
-        self.Rect.x = self.Rect.x + math.abs(distX+1)
-    elseif isFocusOnY and self.Rect.y < basic_center.x then
-        Logtest = "What Up"
-        self.Velocity.y = 0
-        local distY = (self.Rect.y+self.Rect.height) - basic.Rect.y
-        self.Rect.y = self.Rect.y - math.abs(distY+1)
+    --local Ybias = 10
+    local overLapX = (basic.Rect.width/2 - self.Rect.width/2) - math.abs(basic_center.x - self_center.x)
+    local overLapY = (basic.Rect.height/2 - self.Rect.height/2) - math.abs(basic_center.y - self_center.y)
+    pointVec.x = self_center.x
+    pointVec.y = self_center.y
+    if overLapX < overLapY then
+        if  self_center.x < basic_center.x then
+            Logtest = "What Right"
+            self.Rect.x = self.Rect.x - (overLapX+self.Rect.width)
+        else
+            Logtest = "What Left"
+            self.Rect.x = self.Rect.x + (overLapX+self.Rect.width)
+        end
+    else
+        if self_center.y < basic_center.y then
+            Logtest = "What Up"
+            gamePro.jumpCount = 0
+            self.Rect.y = self.Rect.y - (overLapY+self.Rect.height)
+            if self.Velocity.y > 0 then self.Velocity.y = 0 end
+        else
+            Logtest = "What Down"
+            self.Rect.y = self.Rect.y + (overLapY+self.Rect.height)
+            if self.Velocity.y < 0 then self.Velocity.y = 0 end
+        end
     end
 end
 
