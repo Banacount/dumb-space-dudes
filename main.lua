@@ -6,7 +6,6 @@ local obj = require("objects")
 _G.Logtest = ""
 _G.pointVec = misc.vec2.new(0, 0)
 local BG = misc.color.new(0, 0, 0, 1)
-
 --Main player 2 platform
 local main_color = misc.color.new(255, 0, 50, 1)
 local main_rect = misc.rect.new(0, 0, 500, 300)
@@ -35,10 +34,10 @@ function love.update(dt)
     local walkSpeed = gamePro.walkSpeed
     if love.keyboard.isDown("a") then
         player_obj2:Move(-walkSpeed)
-        gamePro.onRight = false
+        gamePro.lookState = 1
     elseif love.keyboard.isDown("d") then
         player_obj2:Move(walkSpeed)
-        gamePro.onRight = true
+        gamePro.lookState = 0
     end
 end
 function love.draw()

@@ -2,14 +2,12 @@ local mc = require("misc")
 local gamePro = require("gameProps")
 
 local objects = {}
-
 -- Basic object methods 
 ---@class basicObj 
 ---@field Rect Rectangle
 ---@field Color Color
 objects.basic = {}
 objects.basic.__index = objects.basic
-
 ---@param rect Rectangle @param color Color
 function objects.basic.new(rect, color)
     local obj = setmetatable({}, objects.basic)
@@ -52,11 +50,27 @@ function objects.player:Display(player_img)
     local plRect = self.Rect
     local plImgScale = 0.74
     love.graphics.setColor(1, 1, 1)
-    if gamePro.onRight then
-        love.graphics.draw(player_img, plRect.x-1, plRect.y-5, 0, plImgScale, plImgScale)
-    else
-        love.graphics.draw(player_img, plRect.x+30.08, plRect.y-5, 0, -plImgScale, plImgScale)
+    local perc = self.Velocity.x / gamePro.walkSpeed
+    local imgOrient = 0.21 * perc
+    local imgP = mc.vec2.new(0, 0)
+    -- Walking to right
+    if gamePro.lookState == 0 then
+        imgP.x = plRect.x-1
+        imgP.y = plRect.y-3
+        local xper = 6 * perc
+        local yper = -2 * perc
+        love.graphics.draw(player_img, imgP.x+xper, imgP.y+yper, imgOrient, plImgScale, plImgScale)
+    -- Walking to left
+    elseif gamePro.lookState == 1 then
+        imgP.x = plRect.x+30.08-1
+        imgP.y = plRect.y-3
+        local xper = 3 * perc
+        local yper = 2 * perc
+        love.graphics.draw(player_img, imgP.x+xper, imgP.y+yper, imgOrient, -plImgScale, plImgScale)
     end
+    --[[ Not walking for a while
+    elseif gamePro.lookState == 3 then
+    end]]
 end
 --Update velocity
 ---@param deltatime number
@@ -66,8 +80,7 @@ function objects.player:UpdateVelocity(deltatime)
     --Gravity frfr
     self.Velocity.y = self.Velocity.y + gamePro.gravity
     --Player friction
-    local playerFriction = 0.3
-    self.Velocity.x = self.Velocity.x * playerFriction
+    self.Velocity.x = self.Velocity.x * gamePro.walkFriction
 end
 
 --Move player
@@ -110,8 +123,6 @@ function objects.player:SeparateFromBasic(basic)
     --local Ybias = 10
     local overLapX = (basic.Rect.width/2 - self.Rect.width/2) - math.abs(basic_center.x - self_center.x)
     local overLapY = (basic.Rect.height/2 - self.Rect.height/2) - math.abs(basic_center.y - self_center.y)
-    pointVec.x = self_center.x
-    pointVec.y = self_center.y
     if overLapX < overLapY then
         if  self_center.x < basic_center.x then
             Logtest = "What Right"

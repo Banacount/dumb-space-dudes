@@ -6,7 +6,8 @@ local gameProperties = {
     jumpCount = 0,
     jumpVelocity = 330,
     walkSpeed = 160,
-    onRight = false
+    walkFriction = 0.9,
+    lookState = 1
 }
 
 gameProperties.player2ImgPath = {
