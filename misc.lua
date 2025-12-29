@@ -82,4 +82,41 @@ function misc.vec2:GetValue()
     return {self.x, self.y}
 end
 
+
+-- Stars background
+local starList = {}
+local starCount = 100
+local starLoaded = false
+function misc.StarsBG()
+    local ySpawnPad = 10
+    love.graphics.setColor({1, 1, 1, 1})
+    local scr = {width = love.graphics.getWidth(), height = love.graphics.getHeight()}
+    local speed = {min = 34, max = 100}
+
+    if not starLoaded then
+        for i = 1, starCount do
+            local starRadius = math.random(1, 4)
+            local starPos = misc.vec2.new(math.random(starRadius, scr.width), math.random(starRadius+ySpawnPad, scr.height-ySpawnPad))
+            local starSpeed = math.random(speed.min, speed.max)
+
+            starList[i] = {x = starPos.x, y = starPos.y, radius = starRadius, speed = starSpeed}
+        end
+        starLoaded = true
+    else
+        for i,star in ipairs(starList) do
+            --print("Index: ",ind,"| Properties: ",star.x, ", ",star.y,", ", star.radius)
+            love.graphics.circle("fill", star.x, star.y, star.radius)
+            local dt = love.timer.getDelta()
+
+            starList[i].x = starList[i].x + (star.speed * dt)
+            if star.x >= scr.width then
+                starList[i].x = 0
+                starList[i].speed = math.random(speed.min, speed.max)
+                starList[i].radius = math.random(1, 4)
+            end
+        end
+    end
+end
+
+
 return misc

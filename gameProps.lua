@@ -14,4 +14,8 @@ gameProperties.player2ImgPath = {
     'ass/img/player2_main.png'
 }
 
+gameProperties.platformImgPath = {
+    'ass/img/main_platform1.png'
+}
+
 return gameProperties

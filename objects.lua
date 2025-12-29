@@ -2,6 +2,8 @@ local mc = require("misc")
 local gamePro = require("gameProps")
 
 local objects = {}
+
+
 -- Basic object methods 
 ---@class basicObj 
 ---@field Rect Rectangle
@@ -17,9 +19,11 @@ function objects.basic.new(rect, color)
     return obj
 end
 
-function objects.basic:Display()
+---@param basic_img love.Image
+function objects.basic:Display(basic_img)
     love.graphics.setColor(self.Color:GetValue())
     love.graphics.rectangle("fill", self.Rect.x, self.Rect.y, self.Rect.width, self.Rect.height)
+    love.graphics.draw(basic_img, self.Rect.x, self.Rect.y, 0, 1, 1)
 end
 
 
@@ -82,7 +86,6 @@ function objects.player:UpdateVelocity(deltatime)
     --Player friction
     self.Velocity.x = self.Velocity.x * gamePro.walkFriction
 end
-
 --Move player
 local hasMovement = true
 ---@param x number|nil
@@ -93,25 +96,7 @@ function objects.player:Move(x, y)
         self.Velocity.y = y or self.Velocity.y
     end
 end
-
 --Collide methods
----@param basic basicObj
-function objects.player:SeparateCollisionBasic(basic)
-    local basic_center = mc.vec2.new(basic.Rect.width / 2, basic.Rect.height / 2)
-    --X calc
-    --Y calc
-    local Ytotal = self.Rect.y + self.Rect.height
-    local YtotalOther = basic.Rect.y
-    local col_distY = Ytotal - YtotalOther
-
-    if not self.Rect:IsCollide(basic.Rect) and gamePro.hasStarted then return end
-    if col_distY > 0 then
-        local distY = (self.Rect.y+self.Rect.height) - basic.Rect.y
-        self.Velocity.y = 0
-        self.Rect.y = self.Rect.y - distY
-    end
-end
-
 ---@param basic basicObj
 function objects.player:SeparateFromBasic(basic)
     local basic_center = mc.vec2.new(basic.Rect.x + (basic.Rect.width / 2), basic.Rect.y + (basic.Rect.height / 2))
@@ -125,24 +110,56 @@ function objects.player:SeparateFromBasic(basic)
     local overLapY = (basic.Rect.height/2 - self.Rect.height/2) - math.abs(basic_center.y - self_center.y)
     if overLapX < overLapY then
         if  self_center.x < basic_center.x then
-            Logtest = "What Right"
             self.Rect.x = self.Rect.x - (overLapX+self.Rect.width)
         else
-            Logtest = "What Left"
             self.Rect.x = self.Rect.x + (overLapX+self.Rect.width)
         end
     else
         if self_center.y < basic_center.y then
-            Logtest = "What Up"
             gamePro.jumpCount = 0
             self.Rect.y = self.Rect.y - (overLapY+self.Rect.height)
             if self.Velocity.y > 0 then self.Velocity.y = 0 end
         else
-            Logtest = "What Down"
             self.Rect.y = self.Rect.y + (overLapY+self.Rect.height)
             if self.Velocity.y < 0 then self.Velocity.y = 0 end
         end
     end
+end
+
+
+-- Movable static object(normal) methods
+---@class movable
+---@field Rect Rectangle
+---@field Velocity Vec2
+---@field Color Color
+objects.movable = {}
+objects.movable.__index = objects.movable
+
+function objects.movable.new(rect, velocity, color)
+    local ins = setmetatable({}, objects.movable)
+    ins.Rect = rect
+    ins.Velocity = velocity
+    ins.Color = color
+    return ins
+end
+-- Display method
+---@param image love.Image | nil
+function objects.movable:Display(image)
+    love.graphics.setColor(self.Color:GetValue())
+    love.graphics.rectangle("fill", self.Rect.x, self.Rect.y, self.Rect.width, self.Rect.height)
+end
+-- Update velocity and other shits method lol
+---@param dt number
+function objects.movable:UpdateVelocity(dt)
+    self.Rect.x = self.Rect.x + (dt * self.Velocity.x)
+    self.Rect.y = self.Rect.y + (dt * self.Velocity.y)
+end
+-- Move method for movable
+---@param x number|nil
+---@param y number|nil
+function objects.movable:Move(x, y)
+    self.Velocity.x = x or 0
+    self.Velocity.y = y or 0
 end
 
 
