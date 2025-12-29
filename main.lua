@@ -37,10 +37,10 @@ function love.update(dt)
     --Center the main platform
     main_rect.x = (love.graphics.getWidth()-main_rect.width) / 2
     main_rect.y = (love.graphics.getHeight()-main_rect.height)
-    gamePro.hasStarted = true
-    -- Collision and Velocity
+    gamePro.hasStarted = true -- Collision and Velocity
     player_obj2:UpdateVelocity(dt)
     player_obj2:SeparateFromBasic(main_platform)
+    -- Asteroids collisions and velocity
     for n,aste in ipairs(asteroids) do
         aste:UpdateVelocity(dt)
 
@@ -51,21 +51,30 @@ function love.update(dt)
             print("Removed: ", n)
         end
 
-        player_obj2:SeparateFromBasic(aste)
+        if player_obj2.Rect:IsCollide(aste.Rect) then
+            player_obj2.Velocity.x = aste.Velocity.x
+            player_obj2.Velocity.y = aste.Velocity.y
+            table.remove(asteroids, n)
+        end
     end
 
-    local walkSpeed = gamePro.walkSpeed
+    -- A - D Movement of player 2(the robot thingy)
+    local walkSpeed = gamePro.walkSpeed * 10
     if love.keyboard.isDown("a") then
-        player_obj2:Move(-walkSpeed)
+        if math.abs(player_obj2.Velocity.x) < walkSpeed then
+            player_obj2.Velocity.x = player_obj2.Velocity.x - (dt * walkSpeed)
+        end
         gamePro.lookState = 1
     elseif love.keyboard.isDown("d") then
-        player_obj2:Move(walkSpeed)
+        if math.abs(player_obj2.Velocity.x) < walkSpeed then
+            player_obj2.Velocity.x = player_obj2.Velocity.x + (dt * walkSpeed)
+        end
         gamePro.lookState = 0
     end
 
+    -- Throwing asteroids frfr
     local cursorPos = {x = love.mouse.getX(), y = love.mouse.getY()}
     if love.mouse.isDown(1) then
-        Logtest = "Currently holding"
         if mouseRecent == 0 then
             astePowerLine[1].x = cursorPos.x
             astePowerLine[1].y = cursorPos.y
@@ -75,15 +84,17 @@ function love.update(dt)
         mouseRecent = 1
     -- Detect mouse up
     elseif mouseRecent == 1 then
-        Logtest = "You stopped, naughty boi"
         mouseRecent = 0
+        local xLinePower = (astePowerLine[2].x - astePowerLine[1].x) * gamePro.asteroidPower
+        local yLinePower = (astePowerLine[2].y - astePowerLine[1].y) * gamePro.asteroidPower
         local validPower = 20
+        Logtest = "Shot velocity: "..xLinePower..", "..yLinePower
         local isPowerValid = (math.abs(astePowerLine[1].x-astePowerLine[2].x) > validPower or
                               math.abs(astePowerLine[1].y-astePowerLine[2].y) > validPower)
 
         if isPowerValid then
-            local newRect = misc.rect.new(cursorPos.x-(aste_rect.width/2), cursorPos.y-(aste_rect.height/2), aste_rect.width, aste_rect.height)
-            local newVel = misc.vec2.new(astePowerLine[1].x-astePowerLine[2].x, astePowerLine[1].y-astePowerLine[2].y)
+            local newRect = misc.rect.new(astePowerLine[1].x - (aste_rect.width / 2), astePowerLine[1].y - (aste_rect.height / 2), aste_rect.width, aste_rect.height)
+            local newVel = misc.vec2.new(xLinePower, yLinePower)
             local aste = obj.movable.new(newRect, newVel, aste_color)
             table.insert(asteroids, aste)
         end
@@ -117,7 +128,7 @@ function love.keypressed(key)
     end
 
     if key == "space" and gamePro.jumpCount < gamePro.jumpCountMax then
-        player_obj2:Move(0, -gamePro.jumpVelocity)
+        player_obj2:Move(nil, -gamePro.jumpVelocity)
         gamePro.jumpCount = gamePro.jumpCount + 1
     end
 
