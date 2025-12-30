@@ -9,7 +9,6 @@ _G.astePowerLine = {misc.vec2.new(0, 0), misc.vec2.new(0, 0), alpha = 1}
 local BG = misc.color.new(0, 0, 0, 1)
 local mouseRecent = 0
 local powerCircle = obj.circle.new(misc.vec2.new(0, 0), 0, misc.color.new(255, 255, 255, 1))
-
 --Main player 2 platform
 local platform_img
 local main_color = misc.color.new(255, 103, 62, 1)
@@ -32,11 +31,16 @@ local asteroids = {}
 
 -- Main game functions
 local handleP2OnVoid
-
+local addDelay
+local getDelay
+local removeDelay
+local restartDelay
+local delayKeywords = { "asteroidDelay" }
 
 function love.load()
     player_img = love.graphics.newImage(gamePro.player2ImgPath[1])
     platform_img = love.graphics.newImage(gamePro.platformImgPath[1])
+    addDelay(delayKeywords[1], gamePro.throwDelay)
 end
 
 function love.update(dt)
@@ -85,7 +89,7 @@ function love.update(dt)
 
     -- Throwing asteroids frfr
     local cursorPos = {x = love.mouse.getX(), y = love.mouse.getY()}
-    if love.mouse.isDown(1) then
+    if love.mouse.isDown(1) and getDelay(delayKeywords[1]) then
         if mouseRecent == 0 then
             astePowerLine[1].x = cursorPos.x
             astePowerLine[1].y = cursorPos.y
@@ -114,9 +118,10 @@ function love.update(dt)
             local newVel = misc.vec2.new(xLinePower, yLinePower)
             local aste = obj.movable.new(newRect, newVel, aste_color)
             table.insert(asteroids, aste)
+            restartDelay(delayKeywords[1], gamePro.throwDelay)
         end
     else
-        local shrink = 0.12
+        local shrink = 0.07
         powerCircle.Radius = powerCircle.Radius * (shrink ^ dt)
         astePowerLine.alpha = astePowerLine.alpha * (shrink ^ dt)
     end
@@ -167,4 +172,60 @@ function handleP2OnVoid()
         player_obj2.Rect.y = 220
         player_obj2.Rect.x = (love.graphics.getWidth()-player_obj2.Rect.width) / 2
     end
+end
+
+-- Time shits
+---@param identifier string
+---@param delay number
+function addDelay(identifier, delay)
+    local delayExist = false
+    -- Check if delay exists
+    for i, item in ipairs(gamePro.timeCaptures) do
+        if item.id == identifier then delayExist = true end
+    end
+
+    -- Add if it does not exist
+    if not delayExist then
+        local insItem = {id = identifier, delayNum = delay, captured = love.timer.getTime()}
+        table.insert(gamePro.timeCaptures, insItem)
+    end
+end
+-- Checking delay
+---@param identifier string
+---@return boolean
+function getDelay(identifier)
+    local isDone = false
+    local delayExist = false
+    local delayIndex = 0
+    -- Check if delay exists
+    for i, item in ipairs(gamePro.timeCaptures) do
+        if item.id == identifier then delayExist = true delayIndex = i end
+    end
+
+    local delay = gamePro.timeCaptures[delayIndex]
+    local curTime = love.timer.getTime()
+    if delayExist then
+        if curTime-delay.captured >= delay.delayNum then
+            isDone = true
+        end
+    end
+
+    return isDone
+end
+-- Remove delay
+---@param identifier string
+function removeDelay(identifier)
+    for i, item in ipairs(gamePro.timeCaptures) do
+        if item.id == identifier then
+            table.remove(gamePro.timeCaptures, i)
+            break
+        end
+    end
+end
+-- Restart Delay
+---@param identifier string
+---@param delay number
+function restartDelay(identifier, delay)
+    removeDelay(identifier)
+    addDelay(identifier, delay)
 end
