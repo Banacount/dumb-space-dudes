@@ -5,7 +5,7 @@ local objects = {}
 
 
 -- Basic object methods 
----@class basicObj 
+---@class basicObj
 ---@field Rect Rectangle
 ---@field Color Color
 objects.basic = {}
@@ -161,6 +161,58 @@ function objects.movable:Move(x, y)
     self.Velocity.x = x or 0
     self.Velocity.y = y or 0
 end
+
+
+-- Circle object
+---@class circle
+---@field Position Vec2
+---@field Radius number
+---@field Color Color
+objects.circle = {}
+objects.circle.__index = objects.circle
+
+---@param position Vec2
+---@param radius number
+---@param color Color
+function objects.circle.new(position, radius, color)
+    local ins = setmetatable({}, objects.circle)
+    ins.Position = position or mc.vec2.new(0, 0)
+    ins.Radius = radius or 0
+    ins.Color = color or mc.color.new(0, 0, 0, 1)
+    return ins
+end
+
+-- Display circle method
+function objects.circle:Display()
+    love.graphics.setColor(self.Color:GetValue())
+    love.graphics.circle("fill", self.Position.x, self.Position.y, self.Radius)
+end
+--[[ Collided with rectangle method
+---@param rect Rectangle
+---@return boolean
+-- Imma leave this code just incase lolz (It's wrong on a lot of things)
+function objects.circle:IsCollideWithRect(rect)
+    local collided = false
+    local selfPos = self.Position
+    local centerRect = {x = rect.x + (rect.width/2), y = rect.y + (rect.height/2)}
+    pointVec.x = selfPos.x
+
+    local distX = math.abs(selfPos.x - centerRect.x)
+    local distY = math.abs(selfPos.y - centerRect.y)
+
+    local totalW = self.Radius+(rect.width/2)
+    local totalH = self.Radius+(rect.height/2)
+    pointVec.y = selfPos.y+self.Radius
+
+    if distY < totalH and distX < totalW then
+        collided = true
+        Logtest = "Collided"
+    else
+        Logtest = ""
+    end
+
+    return collided
+end]]
 
 
 return objects

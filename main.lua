@@ -5,9 +5,10 @@ local obj = require("objects")
 
 _G.Logtest = ""
 _G.pointVec = misc.vec2.new(0, 0)
-_G.astePowerLine = {misc.vec2.new(0, 0), misc.vec2.new(0, 0)}
+_G.astePowerLine = {misc.vec2.new(0, 0), misc.vec2.new(0, 0), alpha = 1}
 local BG = misc.color.new(0, 0, 0, 1)
 local mouseRecent = 0
+local powerCircle = obj.circle.new(misc.vec2.new(0, 0), 0, misc.color.new(255, 255, 255, 1))
 
 --Main player 2 platform
 local platform_img
@@ -18,7 +19,7 @@ local main_platform = obj.basic.new(main_rect, main_color)
 --Player 2
 local player_img
 local player_color2 = misc.color.new(0, 255, 0, 1)
-local player_rect2 = misc.rect.new(870, 60, 30, 40)
+local player_rect2 = misc.rect.new(640, 220, 30, 40)
 local player_vel = misc.vec2.new(0, 0)
 local player_obj2 = obj.player.new(player_rect2, player_color2, player_vel)
 
@@ -27,6 +28,11 @@ local aste_color = misc.color.new(0, 32, 255, 1)
 local aste_rect = misc.rect.new(0, 0, 40, 40)
 local aste_vel = misc.vec2.new(0, 0)
 local asteroids = {}
+
+
+-- Main game functions
+local handleP2OnVoid
+
 
 function love.load()
     player_img = love.graphics.newImage(gamePro.player2ImgPath[1])
@@ -37,6 +43,11 @@ function love.update(dt)
     --Center the main platform
     main_rect.x = (love.graphics.getWidth()-main_rect.width) / 2
     main_rect.y = (love.graphics.getHeight()-main_rect.height)
+
+    --Repawn player2 on the center
+    if not gamePro.hasStarted then
+        player_obj2.Rect.x = (love.graphics.getWidth() - player_obj2.Rect.width) / 2
+    end
     gamePro.hasStarted = true -- Collision and Velocity
     player_obj2:UpdateVelocity(dt)
     player_obj2:SeparateFromBasic(main_platform)
@@ -48,7 +59,7 @@ function love.update(dt)
             aste.Rect.y > love.graphics.getHeight()+aste.Rect.height or
             aste.Rect.x+aste.Rect.width < 0 or aste.Rect.y+aste.Rect.height < 0 then
             table.remove(asteroids, n)
-            print("Removed: ", n)
+            --print("Removed: ", n)
         end
 
         if player_obj2.Rect:IsCollide(aste.Rect) then
@@ -78,9 +89,15 @@ function love.update(dt)
         if mouseRecent == 0 then
             astePowerLine[1].x = cursorPos.x
             astePowerLine[1].y = cursorPos.y
+            powerCircle.Position.x = cursorPos.x
+            powerCircle.Position.y = cursorPos.y
+            astePowerLine.alpha = 1
         end
+        local xLinePower = (astePowerLine[2].x - astePowerLine[1].x) * gamePro.asteroidPower
+        local yLinePower = (astePowerLine[2].y - astePowerLine[1].y) * gamePro.asteroidPower
         astePowerLine[2].x = cursorPos.x
         astePowerLine[2].y = cursorPos.y
+        powerCircle.Radius = (math.abs(xLinePower) + math.abs(yLinePower)) / 41
         mouseRecent = 1
     -- Detect mouse up
     elseif mouseRecent == 1 then
@@ -98,7 +115,14 @@ function love.update(dt)
             local aste = obj.movable.new(newRect, newVel, aste_color)
             table.insert(asteroids, aste)
         end
+    else
+        local shrink = 0.12
+        powerCircle.Radius = powerCircle.Radius * (shrink ^ dt)
+        astePowerLine.alpha = astePowerLine.alpha * (shrink ^ dt)
     end
+
+    -- Teleport back when in the void
+    handleP2OnVoid()
 end
 
 function love.draw()
@@ -109,7 +133,7 @@ function love.draw()
     -- Game elements
     main_platform:Display(platform_img)
     player_obj2:Display(player_img)
-    love.graphics.setColor(1, 0, 0, 1)
+    love.graphics.setColor(1, 0, 0, astePowerLine.alpha)
     love.graphics.setLineWidth(5)
     love.graphics.line(astePowerLine[1].x, astePowerLine[1].y, astePowerLine[2].x, astePowerLine[2].y)
     for n,aste in ipairs(asteroids) do
@@ -120,6 +144,7 @@ function love.draw()
     love.graphics.setColor(0, 0, 1, 1)
     love.graphics.circle("fill", pointVec.x, pointVec.y, 4)
     love.graphics.print(Logtest, 20, 20, 0, 3, 3)
+    powerCircle:Display()
 end
 
 function love.keypressed(key)
@@ -136,3 +161,10 @@ function love.keypressed(key)
 end
 
 
+-- Game Functions
+function handleP2OnVoid()
+    if player_obj2.Rect.y > love.graphics.getHeight()+100 then
+        player_obj2.Rect.y = 220
+        player_obj2.Rect.x = (love.graphics.getWidth()-player_obj2.Rect.width) / 2
+    end
+end

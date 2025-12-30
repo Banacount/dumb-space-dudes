@@ -5,5 +5,6 @@ function love.conf(th)
     -- Window stuff
     th.window.width = 1280
     th.window.height = 720
-    th.window.resizable = true
+    --th.window.resizable = true
+    th.window.fullscreen = true
 end
